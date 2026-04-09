@@ -242,4 +242,9 @@ DELIMITER ;
 -- Usuario inicial opcional para pruebas (cambia el hash en producción)
 INSERT INTO users (username, password_hash, role, is_admin)
 VALUES ('admin', 'admin123', 'ADMIN', 1)
+ON DUPLICATE KEY UPDATE
+    password_hash = VALUES(password_hash),
+    role = VALUES(role),
+    is_admin = VALUES(is_admin),
+    is_active = 1;
 
