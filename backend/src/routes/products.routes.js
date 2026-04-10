@@ -10,6 +10,23 @@ const env = require('../config/env');
 const router = express.Router();
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
+async function ensureProductImagesTable() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS product_images (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            product_id INT NOT NULL,
+            file_name VARCHAR(255) NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            mime_type VARCHAR(100),
+            size_bytes INT,
+            is_primary TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_product_images_product FOREIGN KEY (product_id) REFERENCES products(id),
+            INDEX idx_product_images_product (product_id)
+        ) ENGINE=InnoDB
+    `);
+}
+
 function normalizeBarcode(barcode) {
     if (barcode == null) return null;
     if (typeof barcode !== 'string') return barcode;
@@ -55,6 +72,8 @@ router.get(
     '/',
     asyncHandler(async (_req, res) => {
         let rows;
+
+        await ensureProductImagesTable();
 
         try {
             [rows] = await pool.query(
@@ -112,6 +131,8 @@ router.post(
     '/:id/image',
     upload.single('image'),
     asyncHandler(async (req, res) => {
+        await ensureProductImagesTable();
+
         const productId = Number(req.params.id);
 
         if (!Number.isInteger(productId) || productId <= 0) {
@@ -367,6 +388,8 @@ router.put(
 router.delete(
     '/:id',
     asyncHandler(async (req, res) => {
+        await ensureProductImagesTable();
+
         const productId = Number(req.params.id);
 
         if (!Number.isInteger(productId) || productId <= 0) {
