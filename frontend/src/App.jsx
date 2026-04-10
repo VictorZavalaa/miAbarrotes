@@ -63,6 +63,7 @@ export default function App() {
     const [productForm, setProductForm] = useState({
         name: '',
         brand: '',
+        barcode: '',
         category: '',
         sale_mode: 'UNIT',
         base_unit: 'piece',
@@ -237,6 +238,7 @@ export default function App() {
             setProductForm({
                 name: '',
                 brand: '',
+                barcode: '',
                 category: '',
                 sale_mode: 'UNIT',
                 base_unit: 'piece',

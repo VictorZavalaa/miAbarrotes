@@ -1423,6 +1423,64 @@ button:disabled {
     color: #64748b;
 }
 
+.product-card-meta {
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+}
+
+.product-health-cell {
+    display: grid;
+    gap: 4px;
+}
+
+.product-health-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.product-health-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+.product-health-badge.complete {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+}
+
+.product-health-badge.complete .product-health-dot {
+    background: #16a34a;
+}
+
+.product-health-badge.incomplete {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.product-health-badge.incomplete .product-health-dot {
+    background: #dc2626;
+}
+
+.product-missing-text {
+    margin: 0;
+    color: #b45309;
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
 .product-card-body h4 {
     margin: 0;
     font-size: 0.96rem;
@@ -1866,6 +1924,22 @@ body[data-theme='dark'] .stock-pill {
 body[data-theme='dark'] .stock-pill.low {
     background: #4c1d1d;
     color: #fecaca;
+}
+
+body[data-theme='dark'] .product-health-badge.complete {
+    background: rgba(22, 163, 74, 0.2);
+    border-color: rgba(74, 222, 128, 0.4);
+    color: #86efac;
+}
+
+body[data-theme='dark'] .product-health-badge.incomplete {
+    background: rgba(220, 38, 38, 0.2);
+    border-color: rgba(248, 113, 113, 0.35);
+    color: #fca5a5;
+}
+
+body[data-theme='dark'] .product-missing-text {
+    color: #fbbf24;
 }
 
 body[data-theme='dark'] .sales-cart-item {

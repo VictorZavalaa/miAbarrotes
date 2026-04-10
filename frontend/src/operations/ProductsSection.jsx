@@ -4,11 +4,23 @@ import { toMediaUrl } from '../api';
 import { confirmDanger } from '../utils/alerts';
 
 const PRODUCTS_PER_PAGE = 50;
-const PRESENTATION_UNITS = ['g', 'kg', 'ml', 'L', 'oz', 'lb'];
+const PRESENTATION_UNITS = ['pza', 'g', 'kg', 'ml', 'L', 'oz', 'lb'];
+const PRODUCT_MISSING_FILTERS = [
+    { value: 'ALL', label: 'Todos' },
+    { value: 'ANY_MISSING', label: 'Con campos faltantes' },
+    { value: 'MISSING_IMAGE', label: 'Sin foto' },
+    { value: 'MISSING_BARCODE', label: 'Sin código de barras' },
+    { value: 'MISSING_STOCK', label: 'Sin cantidad/stock' },
+    { value: 'MISSING_COST', label: 'Sin costo' },
+    { value: 'MISSING_BRAND', label: 'Sin marca' },
+    { value: 'MISSING_CATEGORY', label: 'Sin categoría' },
+    { value: 'COMPLETE', label: 'Completos' }
+];
 
 const EMPTY_FORM = {
     name: '',
     brand: '',
+    barcode: '',
     category: '',
     sale_mode: 'UNIT',
     base_unit: 'piece',
@@ -34,6 +46,7 @@ export default function ProductsSection({
     const [scanFeedback, setScanFeedback] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [selectedBrand, setSelectedBrand] = useState('ALL');
+    const [selectedMissingFilter, setSelectedMissingFilter] = useState('ALL');
     const [isCreateBrandSuggestOpen, setIsCreateBrandSuggestOpen] = useState(false);
     const [isEditBrandSuggestOpen, setIsEditBrandSuggestOpen] = useState(false);
     const [isCreateCategorySuggestOpen, setIsCreateCategorySuggestOpen] = useState(false);
@@ -131,7 +144,59 @@ export default function ProductsSection({
         const categoryFilter = selectedCategory;
         const brandFilter = selectedBrand;
 
+        function getCompleteness(product) {
+            const missingImage = !String(product.image_url || '').trim();
+            const missingBarcode = !String(product.barcode || '').trim();
+            const missingBrand = !String(product.brand || '').trim();
+            const missingCategory = !String(product.category || '').trim();
+            const missingStock = Number(product.stock || 0) <= 0;
+            const missingCost = Number(product.cost_price || 0) <= 0;
+
+            const missingLabels = [];
+            if (missingImage) missingLabels.push('Foto');
+            if (missingBarcode) missingLabels.push('Código');
+            if (missingStock) missingLabels.push('Cantidad');
+            if (missingCost) missingLabels.push('Costo');
+            if (missingBrand) missingLabels.push('Marca');
+            if (missingCategory) missingLabels.push('Categoría');
+
+            return {
+                missingImage,
+                missingBarcode,
+                missingBrand,
+                missingCategory,
+                missingStock,
+                missingCost,
+                missingLabels,
+                isComplete: missingLabels.length === 0
+            };
+        }
+
+        function matchesMissingFilter(completeness) {
+            switch (selectedMissingFilter) {
+                case 'ANY_MISSING':
+                    return !completeness.isComplete;
+                case 'MISSING_IMAGE':
+                    return completeness.missingImage;
+                case 'MISSING_BARCODE':
+                    return completeness.missingBarcode;
+                case 'MISSING_STOCK':
+                    return completeness.missingStock;
+                case 'MISSING_COST':
+                    return completeness.missingCost;
+                case 'MISSING_BRAND':
+                    return completeness.missingBrand;
+                case 'MISSING_CATEGORY':
+                    return completeness.missingCategory;
+                case 'COMPLETE':
+                    return completeness.isComplete;
+                default:
+                    return true;
+            }
+        }
+
         return products.filter((product) => {
+            const completeness = getCompleteness(product);
             const haystack = [
                 product.name,
                 product.brand,
@@ -147,10 +212,11 @@ export default function ProductsSection({
             const matchesCategory =
                 categoryFilter === 'ALL' || (product.category || 'Sin categoría') === categoryFilter;
             const matchesBrand = brandFilter === 'ALL' || (product.brand || 'Sin marca') === brandFilter;
+            const matchesMissing = matchesMissingFilter(completeness);
 
-            return matchesText && matchesCategory && matchesBrand;
+            return matchesText && matchesCategory && matchesBrand && matchesMissing;
         });
-    }, [products, query, selectedCategory, selectedBrand]);
+    }, [products, query, selectedCategory, selectedBrand, selectedMissingFilter]);
 
     const categoryOptions = useMemo(() => {
         const set = new Set(products.map((item) => item.category || 'Sin categoría'));
@@ -250,7 +316,29 @@ export default function ProductsSection({
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [query, selectedCategory, selectedBrand]);
+    }, [query, selectedCategory, selectedBrand, selectedMissingFilter]);
+
+    function getProductCompleteness(product) {
+        const missingImage = !String(product.image_url || '').trim();
+        const missingBarcode = !String(product.barcode || '').trim();
+        const missingBrand = !String(product.brand || '').trim();
+        const missingCategory = !String(product.category || '').trim();
+        const missingStock = Number(product.stock || 0) <= 0;
+        const missingCost = Number(product.cost_price || 0) <= 0;
+
+        const missingLabels = [];
+        if (missingImage) missingLabels.push('Foto');
+        if (missingBarcode) missingLabels.push('Código');
+        if (missingStock) missingLabels.push('Cantidad');
+        if (missingCost) missingLabels.push('Costo');
+        if (missingBrand) missingLabels.push('Marca');
+        if (missingCategory) missingLabels.push('Categoría');
+
+        return {
+            missingLabels,
+            isComplete: missingLabels.length === 0
+        };
+    }
 
     useEffect(() => {
         if (!query.trim()) {
@@ -748,6 +836,15 @@ export default function ProductsSection({
                             </div>
 
                             <div className="field-with-label">
+                                <label className="field-label">Código de barras</label>
+                                <input
+                                    placeholder="Código de barras"
+                                    value={form.barcode || ''}
+                                    onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="field-with-label">
                                 <label className="field-label">Presentación (opcional)</label>
                                 <div className="presentation-inline-fields">
                                     <input
@@ -968,6 +1065,13 @@ export default function ProductsSection({
                             </option>
                         ))}
                     </select>
+                    <select value={selectedMissingFilter} onChange={(e) => setSelectedMissingFilter(e.target.value)}>
+                        {PRODUCT_MISSING_FILTERS.map((filterOption) => (
+                            <option key={filterOption.value} value={filterOption.value}>
+                                {filterOption.label}
+                            </option>
+                        ))}
+                    </select>
                     <small>
                         {filteredProducts.length} resultado(s) · mostrando {visibleRange.start}-{visibleRange.end}
                     </small>
@@ -985,13 +1089,14 @@ export default function ProductsSection({
                                     <th>Categoría</th>
                                     <th>Precio</th>
                                     <th>Stock</th>
+                                    <th>Control</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredProducts.length === 0 ? (
                                     <tr>
-                                        <td colSpan="8" className="empty-row">
+                                        <td colSpan="9" className="empty-row">
                                             Sin coincidencias para tu búsqueda.
                                         </td>
                                     </tr>
@@ -1000,6 +1105,7 @@ export default function ProductsSection({
                                         const isLowStock =
                                             Number(product.min_stock || 0) > 0 &&
                                             Number(product.stock || 0) <= Number(product.min_stock || 0);
+                                        const completeness = getProductCompleteness(product);
 
                                         return (
                                             <tr key={product.id}>
@@ -1039,6 +1145,26 @@ export default function ProductsSection({
                                                     </span>
                                                 </td>
                                                 <td>
+                                                    <div className="product-health-cell">
+                                                        <span
+                                                            className={completeness.isComplete ? 'product-health-badge complete' : 'product-health-badge incomplete'}
+                                                            title={
+                                                                completeness.isComplete
+                                                                    ? 'Producto completo'
+                                                                    : `Falta: ${completeness.missingLabels.join(', ')}`
+                                                            }
+                                                        >
+                                                            <span className="product-health-dot" aria-hidden="true" />
+                                                            {completeness.isComplete ? 'Completo' : 'Incompleto'}
+                                                        </span>
+                                                        {!completeness.isComplete && (
+                                                            <small className="product-missing-text">
+                                                                {completeness.missingLabels.join(', ')}
+                                                            </small>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td>
                                                     <div className="row-actions">
                                                         <button
                                                             type="button"
@@ -1072,6 +1198,7 @@ export default function ProductsSection({
                             const isLowStock =
                                 Number(product.min_stock || 0) > 0 &&
                                 Number(product.stock || 0) <= Number(product.min_stock || 0);
+                            const completeness = getProductCompleteness(product);
 
                             return (
                                 <article className="product-card" key={product.id}>
@@ -1085,7 +1212,20 @@ export default function ProductsSection({
                                         ) : (
                                             <span className="thumb-placeholder">Sin foto</span>
                                         )}
-                                        <span className="product-card-id">#{product.id}</span>
+                                        <div className="product-card-meta">
+                                            <span className="product-card-id">#{product.id}</span>
+                                            <span
+                                                className={completeness.isComplete ? 'product-health-badge complete' : 'product-health-badge incomplete'}
+                                                title={
+                                                    completeness.isComplete
+                                                        ? 'Producto completo'
+                                                        : `Falta: ${completeness.missingLabels.join(', ')}`
+                                                }
+                                            >
+                                                <span className="product-health-dot" aria-hidden="true" />
+                                                {completeness.isComplete ? 'Completo' : 'Incompleto'}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     <div className="product-card-body">
@@ -1097,6 +1237,11 @@ export default function ProductsSection({
                                         )}
                                         <p>{product.brand || 'Sin marca'}</p>
                                         <p>{product.category || 'Sin categoría'}</p>
+                                        {!completeness.isComplete && (
+                                            <p className="product-missing-text">
+                                                Falta: {completeness.missingLabels.join(', ')}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="product-card-foot">
