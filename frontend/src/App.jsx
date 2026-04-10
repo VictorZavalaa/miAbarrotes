@@ -59,6 +59,7 @@ export default function App() {
     const [status, setStatus] = useState('Cargando datos...');
     const [error, setError] = useState('');
     const [lastRefreshAt, setLastRefreshAt] = useState(null);
+    const [deployTag, setDeployTag] = useState('');
 
     const [productForm, setProductForm] = useState({
         name: '',
@@ -87,17 +88,19 @@ export default function App() {
         setStatus('Cargando catálogo...');
 
         try {
-            const [productsResponse, suppliersResponse, visitsResponse, salesSummaryResponse] = await Promise.all([
+            const [productsResponse, suppliersResponse, visitsResponse, salesSummaryResponse, healthResponse] = await Promise.all([
                 api.getProducts(),
                 api.getSuppliers(),
                 api.getSupplierVisits(),
-                api.getTodaySalesSummary()
+                api.getTodaySalesSummary(),
+                api.getHealth()
             ]);
 
             setProducts(productsResponse.data || []);
             setSuppliers(suppliersResponse.data || []);
             setSupplierVisits(visitsResponse.data || []);
             setTodaySalesSummary(salesSummaryResponse.data || { total: 0, sales_count: 0 });
+            setDeployTag(healthResponse.deploy_tag || 'sin-tag');
             setStatus('Datos actualizados.');
             setLastRefreshAt(new Date());
         } catch (err) {
@@ -618,6 +621,7 @@ export default function App() {
 
                         <TopBar
                             status={status}
+                            deployTag={deployTag}
                             onRefresh={() => currentUser && loadAll()}
                             lastRefreshAt={lastRefreshAt}
                             theme={theme}

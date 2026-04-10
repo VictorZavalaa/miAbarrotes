@@ -1,4 +1,4 @@
-export default function TopBar({ status, onRefresh, lastRefreshAt, theme, onToggleTheme, currentUser, onSwitchUser }) {
+export default function TopBar({ status, deployTag, onRefresh, lastRefreshAt, theme, onToggleTheme, currentUser, onSwitchUser }) {
     const formattedTime = lastRefreshAt
         ? new Intl.DateTimeFormat('es-MX', {
             hour: '2-digit',
@@ -13,6 +13,11 @@ export default function TopBar({ status, onRefresh, lastRefreshAt, theme, onTogg
                 <small>Última actualización: {formattedTime}</small>
             </div>
             <div className="top-bar-actions">
+                {deployTag ? (
+                    <span className="status-chip deploy-chip" title="Marca de despliegue activa en backend">
+                        🚀 {deployTag}
+                    </span>
+                ) : null}
                 {currentUser ? (
                     <span className="status-chip user-chip">
                         👤 {currentUser.username} · {Number(currentUser.is_admin) ? 'Admin' : 'Usuario'}

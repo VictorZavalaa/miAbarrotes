@@ -14,6 +14,8 @@ test('GET /api/health responde OK (con DB mock)', async () => {
     assert.equal(response.status, 200);
     assert.equal(response.body.ok, true);
     assert.equal(response.body.service, 'mi-tienda-backend');
+    assert.equal(typeof response.body.deploy_tag, 'string');
+    assert.ok(response.body.deploy_tag.length > 0);
 
     db.pingDatabase = originalPing;
 });

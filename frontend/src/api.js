@@ -29,6 +29,7 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+    getHealth: () => request('/health'),
     loginUser: (username, password) =>
         request('/login', {
             method: 'POST',
