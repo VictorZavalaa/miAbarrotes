@@ -25,12 +25,14 @@ CREATE TABLE products (
     brand VARCHAR(100),
     barcode VARCHAR(50) UNIQUE,
     category VARCHAR(100),
+    sale_mode ENUM('UNIT', 'WEIGHT') NOT NULL DEFAULT 'UNIT',
+    base_unit ENUM('piece', 'kg') NOT NULL DEFAULT 'piece',
     presentation_value DECIMAL(10,2),
     presentation_unit VARCHAR(10),
     sale_price DECIMAL(10,2) NOT NULL,
     cost_price DECIMAL(10,2),
-    stock INT NOT NULL DEFAULT 0,
-    min_stock INT NOT NULL DEFAULT 0,
+    stock DECIMAL(12,3) NOT NULL DEFAULT 0.000,
+    min_stock DECIMAL(12,3) NOT NULL DEFAULT 0.000,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -120,7 +122,7 @@ CREATE TABLE sale_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sale_id INT NOT NULL,
     product_id INT NOT NULL,
-    quantity INT NOT NULL,
+    quantity DECIMAL(12,3) NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,
     subtotal DECIMAL(10,2) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -151,7 +153,7 @@ CREATE TABLE purchase_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     purchase_id INT NOT NULL,
     product_id INT NOT NULL,
-    quantity INT NOT NULL,
+    quantity DECIMAL(12,3) NOT NULL,
     unit_cost DECIMAL(10,2) NOT NULL,
     subtotal DECIMAL(10,2) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -177,7 +179,7 @@ CREATE TABLE stock_movements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
     movement_type ENUM('SALE_OUT', 'PURCHASE_IN', 'ADJUSTMENT') NOT NULL,
-    quantity INT NOT NULL,
+    quantity DECIMAL(12,3) NOT NULL,
     reference_table VARCHAR(40),
     reference_id INT,
     notes VARCHAR(255),
@@ -196,7 +198,7 @@ CREATE TRIGGER trg_validate_stock_before_sale_item
 BEFORE INSERT ON sale_items
 FOR EACH ROW
 BEGIN
-    DECLARE current_stock INT;
+    DECLARE current_stock DECIMAL(12,3);
 
     SELECT stock INTO current_stock
     FROM products
