@@ -1469,6 +1469,16 @@ button:disabled {
     background: #16a34a;
 }
 
+.product-health-badge.pending {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fcd34d;
+}
+
+.product-health-badge.pending .product-health-dot {
+    background: #f59e0b;
+}
+
 .product-health-badge.incomplete {
     background: #fee2e2;
     color: #991b1b;
@@ -1935,6 +1945,12 @@ body[data-theme='dark'] .product-health-badge.complete {
     background: rgba(22, 163, 74, 0.2);
     border-color: rgba(74, 222, 128, 0.4);
     color: #86efac;
+}
+
+body[data-theme='dark'] .product-health-badge.pending {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(251, 191, 36, 0.35);
+    color: #fbbf24;
 }
 
 body[data-theme='dark'] .product-health-badge.incomplete {

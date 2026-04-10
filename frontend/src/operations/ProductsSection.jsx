@@ -9,6 +9,7 @@ const PRODUCT_MISSING_FILTERS = [
     { value: 'ALL', label: 'Todos' },
     { value: 'ANY_MISSING', label: 'Con campos faltantes' },
     { value: 'MISSING_IMAGE', label: 'Sin foto' },
+    { value: 'MISSING_SALE_PRICE', label: 'Sin precio de venta' },
     { value: 'MISSING_BARCODE', label: 'Sin código de barras' },
     { value: 'MISSING_STOCK', label: 'Sin cantidad/stock' },
     { value: 'MISSING_COST', label: 'Sin costo' },
@@ -150,15 +151,29 @@ export default function ProductsSection({
             const missingBrand = !String(product.brand || '').trim();
             const missingCategory = !String(product.category || '').trim();
             const missingStock = Number(product.stock || 0) <= 0;
+            const missingSalePrice = Number(product.sale_price || 0) <= 0;
             const missingCost = Number(product.cost_price || 0) <= 0;
 
             const missingLabels = [];
             if (missingImage) missingLabels.push('Foto');
+            if (missingSalePrice) missingLabels.push('Precio venta');
             if (missingBarcode) missingLabels.push('Código');
             if (missingStock) missingLabels.push('Cantidad');
             if (missingCost) missingLabels.push('Costo');
             if (missingBrand) missingLabels.push('Marca');
             if (missingCategory) missingLabels.push('Categoría');
+
+            const isPending =
+                missingSalePrice &&
+                !missingImage &&
+                !missingBarcode &&
+                !missingStock &&
+                !missingCost &&
+                !missingBrand &&
+                !missingCategory;
+
+            const isComplete = missingLabels.length === 0;
+            const healthStatus = isComplete ? 'complete' : (isPending ? 'pending' : 'incomplete');
 
             return {
                 missingImage,
@@ -166,9 +181,12 @@ export default function ProductsSection({
                 missingBrand,
                 missingCategory,
                 missingStock,
+                missingSalePrice,
                 missingCost,
                 missingLabels,
-                isComplete: missingLabels.length === 0
+                isComplete,
+                isPending,
+                healthStatus
             };
         }
 
@@ -178,6 +196,8 @@ export default function ProductsSection({
                     return !completeness.isComplete;
                 case 'MISSING_IMAGE':
                     return completeness.missingImage;
+                case 'MISSING_SALE_PRICE':
+                    return completeness.missingSalePrice;
                 case 'MISSING_BARCODE':
                     return completeness.missingBarcode;
                 case 'MISSING_STOCK':
@@ -324,19 +344,35 @@ export default function ProductsSection({
         const missingBrand = !String(product.brand || '').trim();
         const missingCategory = !String(product.category || '').trim();
         const missingStock = Number(product.stock || 0) <= 0;
+        const missingSalePrice = Number(product.sale_price || 0) <= 0;
         const missingCost = Number(product.cost_price || 0) <= 0;
 
         const missingLabels = [];
         if (missingImage) missingLabels.push('Foto');
+        if (missingSalePrice) missingLabels.push('Precio venta');
         if (missingBarcode) missingLabels.push('Código');
         if (missingStock) missingLabels.push('Cantidad');
         if (missingCost) missingLabels.push('Costo');
         if (missingBrand) missingLabels.push('Marca');
         if (missingCategory) missingLabels.push('Categoría');
 
+        const isPending =
+            missingSalePrice &&
+            !missingImage &&
+            !missingBarcode &&
+            !missingStock &&
+            !missingCost &&
+            !missingBrand &&
+            !missingCategory;
+
+        const isComplete = missingLabels.length === 0;
+        const healthStatus = isComplete ? 'complete' : (isPending ? 'pending' : 'incomplete');
+
         return {
             missingLabels,
-            isComplete: missingLabels.length === 0
+            isComplete,
+            isPending,
+            healthStatus
         };
     }
 
@@ -1147,15 +1183,17 @@ export default function ProductsSection({
                                                 <td>
                                                     <div className="product-health-cell">
                                                         <span
-                                                            className={completeness.isComplete ? 'product-health-badge complete' : 'product-health-badge incomplete'}
+                                                            className={`product-health-badge ${completeness.healthStatus}`}
                                                             title={
                                                                 completeness.isComplete
                                                                     ? 'Producto completo'
-                                                                    : `Falta: ${completeness.missingLabels.join(', ')}`
+                                                                    : completeness.isPending
+                                                                        ? 'Producto pendiente de precio de venta'
+                                                                        : `Falta: ${completeness.missingLabels.join(', ')}`
                                                             }
                                                         >
                                                             <span className="product-health-dot" aria-hidden="true" />
-                                                            {completeness.isComplete ? 'Completo' : 'Incompleto'}
+                                                            {completeness.isComplete ? 'Completo' : completeness.isPending ? 'Pendiente' : 'Incompleto'}
                                                         </span>
                                                         {!completeness.isComplete && (
                                                             <small className="product-missing-text">
@@ -1215,15 +1253,17 @@ export default function ProductsSection({
                                         <div className="product-card-meta">
                                             <span className="product-card-id">#{product.id}</span>
                                             <span
-                                                className={completeness.isComplete ? 'product-health-badge complete' : 'product-health-badge incomplete'}
+                                                className={`product-health-badge ${completeness.healthStatus}`}
                                                 title={
                                                     completeness.isComplete
                                                         ? 'Producto completo'
-                                                        : `Falta: ${completeness.missingLabels.join(', ')}`
+                                                        : completeness.isPending
+                                                            ? 'Producto pendiente de precio de venta'
+                                                            : `Falta: ${completeness.missingLabels.join(', ')}`
                                                 }
                                             >
                                                 <span className="product-health-dot" aria-hidden="true" />
-                                                {completeness.isComplete ? 'Completo' : 'Incompleto'}
+                                                {completeness.isComplete ? 'Completo' : completeness.isPending ? 'Pendiente' : 'Incompleto'}
                                             </span>
                                         </div>
                                     </div>
