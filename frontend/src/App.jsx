@@ -10,10 +10,10 @@ import { money } from './utils';
 import { errorToast, promptCashPayment, showCashChangeAlert, successToast, warningToast } from './utils/alerts';
 
 const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📅', hint: 'Agenda y pagos próximos' },
-    { id: 'products', label: 'Productos', icon: '📦', hint: 'Catálogo e inventario' },
-    { id: 'sales', label: 'Venta rápida', icon: '💳', hint: 'Caja y tickets' },
-    { id: 'purchases', label: 'Recepción proveedor', icon: '🚚', hint: 'Entradas de mercancía' }
+    { id: 'dashboard', label: 'Inicio', icon: 'IN', hint: 'Resumen operativo' },
+    { id: 'sales', label: 'Venta rápida', icon: 'VT', hint: 'Caja y cobro' },
+    { id: 'products', label: 'Productos', icon: 'PR', hint: 'Inventario' },
+    { id: 'purchases', label: 'Proveedores', icon: 'PV', hint: 'Entradas y agenda' }
 ];
 
 const CASH_TRACKER_KEY = 'dashboard-cash-tracker';
@@ -557,9 +557,9 @@ export default function App() {
                     <section className="login-page-section" aria-label="Acceso al sistema">
                         <article className="login-page-card">
                             <div className="login-page-head">
-                                <p className="eyebrow">Acceso seguro</p>
-                                <h2>Iniciar sesión</h2>
-                                <p>Ingresa tu usuario y contraseña para entrar al sistema de caja.</p>
+                                <p className="eyebrow">Mostrador local</p>
+                                <h2>Entrada al sistema</h2>
+                                <p>Acceso para caja, inventario y agenda de proveedores.</p>
                             </div>
 
                             <div className="form-grid login-form-grid">
@@ -596,12 +596,12 @@ export default function App() {
                             </div>
 
                             <div className="login-page-actions">
-                                <button type="button" onClick={handleLoginUser}>Entrar</button>
+                                <button type="button" onClick={handleLoginUser}>Entrar al POS</button>
                             </div>
                         </article>
                     </section>
                 ) : (
-                    <>
+                    <div className="app-workspace">
                         <nav className="tabs" aria-label="Secciones operativas">
                             {tabs.map((tab) => (
                                 <button
@@ -619,79 +619,84 @@ export default function App() {
                             ))}
                         </nav>
 
-                        <TopBar
-                            status={status}
-                            deployTag={deployTag}
-                            onRefresh={() => currentUser && loadAll()}
-                            lastRefreshAt={lastRefreshAt}
-                            theme={theme}
-                            onToggleTheme={handleToggleTheme}
-                            currentUser={currentUser}
-                            onSwitchUser={handleSwitchUser}
-                        />
-
-                        <section className="kpi-strip" aria-label="Indicadores de operación">
-                            <article className="kpi-card tone-blue">
-                                <span>Productos</span>
-                                <strong>{dashboardMetrics.products}</strong>
-                                <small>{dashboardMetrics.activeProducts} activos</small>
-                            </article>
-                            <article className="kpi-card tone-violet">
-                                <span>Proveedores</span>
-                                <strong>{dashboardMetrics.suppliers}</strong>
-                                <small>Catálogo de abastecimiento</small>
-                            </article>
-                            <article className="kpi-card tone-amber">
-                                <span>Bajo stock</span>
-                                <strong>{dashboardMetrics.lowStock}</strong>
-                                <small>Revisar reposición</small>
-                            </article>
-                        </section>
-
-                        {error && <p className="error">{error}</p>}
-
-                        {activeTab === 'dashboard' && (
-                            <DashboardSection
-                                suppliers={suppliers}
-                                visits={supplierVisits}
-                                todaySalesSummary={todaySalesSummary}
-                                onCreateVisit={createSupplierVisit}
-                                onUpdateVisit={updateSupplierVisit}
-                                onDeleteVisit={deleteSupplierVisit}
+                        <main className="app-main">
+                            <TopBar
+                                status={status}
+                                deployTag={deployTag}
+                                onRefresh={() => currentUser && loadAll()}
+                                lastRefreshAt={lastRefreshAt}
+                                theme={theme}
+                                onToggleTheme={handleToggleTheme}
+                                currentUser={currentUser}
+                                onSwitchUser={handleSwitchUser}
                             />
-                        )}
 
-                        {activeTab === 'products' && (
-                            <ProductsSection
-                                products={products}
-                                form={productForm}
-                                setForm={setProductForm}
-                                onSubmit={submitProduct}
-                                onUpdateProduct={submitProductEdit}
-                                onDeleteProduct={submitProductDelete}
-                                onUploadProductImage={submitProductImage}
-                                onBulkImportProducts={submitBulkProducts}
-                            />
-                        )}
+                            {activeTab !== 'dashboard' && (
+                                <section className="kpi-strip" aria-label="Indicadores de operación">
+                                    <article className="kpi-card tone-blue">
+                                        <span>Productos</span>
+                                        <strong>{dashboardMetrics.products}</strong>
+                                        <small>{dashboardMetrics.activeProducts} activos</small>
+                                    </article>
+                                    <article className="kpi-card tone-violet">
+                                        <span>Proveedores</span>
+                                        <strong>{dashboardMetrics.suppliers}</strong>
+                                        <small>Catálogo de abastecimiento</small>
+                                    </article>
+                                    <article className="kpi-card tone-amber">
+                                        <span>Bajo stock</span>
+                                        <strong>{dashboardMetrics.lowStock}</strong>
+                                        <small>Revisar reposición</small>
+                                    </article>
+                                </section>
+                            )}
 
-                        {activeTab === 'sales' && (
-                            <SalesSection
-                                products={products}
-                                form={saleForm}
-                                setForm={setSaleForm}
-                                onSubmit={submitSale}
-                            />
-                        )}
+                            {error && <p className="error">{error}</p>}
 
-                        {activeTab === 'purchases' && (
-                            <PurchasesSection
-                                suppliers={suppliers}
-                                supplierForm={supplierForm}
-                                setSupplierForm={setSupplierForm}
-                                onSubmitSupplier={submitSupplier}
-                            />
-                        )}
-                    </>
+                            {activeTab === 'dashboard' && (
+                                <DashboardSection
+                                    suppliers={suppliers}
+                                    visits={supplierVisits}
+                                    todaySalesSummary={todaySalesSummary}
+                                    catalogMetrics={dashboardMetrics}
+                                    onCreateVisit={createSupplierVisit}
+                                    onUpdateVisit={updateSupplierVisit}
+                                    onDeleteVisit={deleteSupplierVisit}
+                                />
+                            )}
+
+                            {activeTab === 'products' && (
+                                <ProductsSection
+                                    products={products}
+                                    form={productForm}
+                                    setForm={setProductForm}
+                                    onSubmit={submitProduct}
+                                    onUpdateProduct={submitProductEdit}
+                                    onDeleteProduct={submitProductDelete}
+                                    onUploadProductImage={submitProductImage}
+                                    onBulkImportProducts={submitBulkProducts}
+                                />
+                            )}
+
+                            {activeTab === 'sales' && (
+                                <SalesSection
+                                    products={products}
+                                    form={saleForm}
+                                    setForm={setSaleForm}
+                                    onSubmit={submitSale}
+                                />
+                            )}
+
+                            {activeTab === 'purchases' && (
+                                <PurchasesSection
+                                    suppliers={suppliers}
+                                    supplierForm={supplierForm}
+                                    setSupplierForm={setSupplierForm}
+                                    onSubmitSupplier={submitSupplier}
+                                />
+                            )}
+                        </main>
+                    </div>
                 )}
             </div>
 

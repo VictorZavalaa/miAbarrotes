@@ -33,9 +33,9 @@ export default function PageHeader() {
     return (
         <header className="page-header">
             <div className="header-main">
-                <p className="eyebrow">Panel de operación</p>
-                <h1>Mi Tienda POS</h1>
-                <p>Control de inventario y caja en tiempo real</p>
+                <p className="eyebrow">Sistema local de tienda</p>
+                <h1>Abarrotes POS</h1>
+                <p>Caja, inventario y proveedores en la Raspberry.</p>
             </div>
 
             <div className="header-right">
@@ -47,7 +47,7 @@ export default function PageHeader() {
                 <div className="header-badge" aria-label="Estado del sistema">
                     <span className="dot" aria-hidden="true" />
                     <div>
-                        <strong>Online local</strong>
+                        <strong>Servidor local</strong>
                         <small>Raspberry + MariaDB</small>
                     </div>
                 </div>

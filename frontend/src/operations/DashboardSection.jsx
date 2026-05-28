@@ -32,10 +32,28 @@ function monthLabel(dateValue) {
     }).format(dateValue);
 }
 
+function formatDateLabel(dateString) {
+    const date = new Date(`${dateString}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return dateString;
+
+    return new Intl.DateTimeFormat('es-MX', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'short'
+    }).format(date);
+}
+
+function getStatusLabel(status) {
+    if (status === 'PAID') return 'Pagado';
+    if (status === 'CANCELLED') return 'Cancelado';
+    return 'Pendiente';
+}
+
 export default function DashboardSection({
     suppliers,
     visits,
     todaySalesSummary,
+    catalogMetrics,
     onCreateVisit,
     onUpdateVisit,
     onDeleteVisit
@@ -125,6 +143,7 @@ export default function DashboardSection({
 
     const selectedDateVisits = visitsByDate[selectedDate] || [];
     const tomorrow = shiftDays(today, 1);
+    const selectedDateLabel = formatDateLabel(selectedDate);
 
     const totals = useMemo(() => {
         const sumByDate = (dateKey) =>
@@ -187,6 +206,19 @@ export default function DashboardSection({
             };
         });
     }, [viewDate, visitsByDate]);
+
+    const upcomingVisits = useMemo(() => {
+        return visits
+            .filter((visit) => visit.status !== 'CANCELLED' && visit.visit_date >= today)
+            .sort((a, b) => {
+                if (a.visit_date === b.visit_date) {
+                    return String(a.supplier_name || '').localeCompare(String(b.supplier_name || ''), 'es');
+                }
+
+                return a.visit_date.localeCompare(b.visit_date);
+            })
+            .slice(0, 5);
+    }, [visits, today]);
 
     async function handleSubmit(event) {
         event.preventDefault();
@@ -276,171 +308,148 @@ export default function DashboardSection({
     }
 
     return (
-        <section className="operation-card dashboard-section">
-            <div className="card-title-row">
-                <h2>Dashboard de agenda y pagos</h2>
-                <p>Planea visitas de proveedores y el dinero que necesitas por día.</p>
-            </div>
-
-            <div className="dashboard-kpis">
-                <article className="stat-card">
-                    <span>Hoy</span>
-                    <strong>{money(totals.today)}</strong>
-                </article>
-                <article className="stat-card">
-                    <span>Mañana</span>
-                    <strong>{money(totals.tomorrow)}</strong>
-                </article>
-                <article className="stat-card">
-                    <span>{selectedDate === today ? 'Fecha seleccionada (hoy)' : `Fecha seleccionada (${selectedDate})`}</span>
-                    <strong>{money(totals.selected)}</strong>
-                </article>
-            </div>
-
-            <section className="dashboard-money-card" aria-label="Resumen de dinero de hoy">
-                <div className="dashboard-money-head">
-                    <h3>Dinero de hoy</h3>
-                    <small>Resumen rápido de caja y compromisos del día.</small>
+        <section className="dashboard-home">
+            <div className="dashboard-home-head">
+                <div>
+                    <span className="section-kicker">Inicio operativo</span>
+                    <h2>Resumen de hoy</h2>
+                    <p>Ventas, caja, inventario y pagos de proveedor en una sola vista.</p>
                 </div>
 
-                <div className="dashboard-money-grid">
-                    <article className="money-stat tone-emerald">
-                        <span>Vendido hoy</span>
-                        <strong>{money(moneySummary.salesTotal)}</strong>
-                    </article>
-
-                    <article className="money-stat tone-blue">
-                        <span>Ventas realizadas</span>
-                        <strong>{moneySummary.salesCount}</strong>
-                        <small>ticket(s)</small>
-                    </article>
-
-                    <article className="money-stat tone-violet">
-                        <span>Ticket promedio</span>
-                        <strong>{money(moneySummary.averageTicket)}</strong>
-                    </article>
-
-                    <article className={[
-                        'money-stat',
-                        moneySummary.projectedBalance >= 0 ? 'tone-emerald-soft' : 'tone-red'
-                    ].join(' ')}>
-                        <span>Disponible proyectado</span>
-                        <strong>{money(moneySummary.projectedBalance)}</strong>
-                        <small>{`ventas - pagos de hoy (${money(moneySummary.plannedPaymentsToday)})`}</small>
-                    </article>
+                <div className="dashboard-date-chip">
+                    <span>{selectedDate === today ? 'Hoy' : 'Fecha activa'}</span>
+                    <strong>{selectedDateLabel}</strong>
                 </div>
+            </div>
 
-                <div className="dashboard-cash-entry">
-                    <div className="dashboard-cash-head">
-                        <div>
-                            <h4>Caja actual</h4>
-                            <small>Ingresa lo que tienes ahora en efectivo y terminal.</small>
-                        </div>
-
-                        <div className="dashboard-cash-actions">
-                            {cashEditorUnlocked ? (
-                                <button type="button" className="secondary small-btn" onClick={lockCashEditor}>
-                                    Bloquear edición
-                                </button>
-                            ) : (
-                                <button type="button" className="secondary small-btn" onClick={requestCashEditorAccess}>
-                                    Editar montos
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    <small className={cashEditorUnlocked ? 'dashboard-cash-lock-note unlocked' : 'dashboard-cash-lock-note'}>
-                        {cashAccessMessage}
+            <section className="dashboard-command-grid" aria-label="Resumen operativo">
+                <article className="dashboard-primary-metric">
+                    <span>Vendido hoy</span>
+                    <strong>{money(moneySummary.salesTotal)}</strong>
+                    <small>
+                        {moneySummary.salesCount} venta(s) · Ticket promedio {money(moneySummary.averageTicket)}
                     </small>
+                </article>
 
-                    <div className="dashboard-cash-form">
-                        <div className="field-with-label">
-                            <label className="field-label" htmlFor="cash-on-hand-input">En caja</label>
-                            <input
-                                id="cash-on-hand-input"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                inputMode="decimal"
-                                placeholder="0.00"
-                                value={cashAmountInput}
-                                onChange={(event) => setCashAmountInput(event.target.value)}
-                                disabled={!cashEditorUnlocked}
-                            />
-                        </div>
+                <article className={moneySummary.projectedBalance >= 0 ? 'dashboard-balance-card positive' : 'dashboard-balance-card negative'}>
+                    <span>Saldo después de pagos</span>
+                    <strong>{money(moneySummary.projectedBalance)}</strong>
+                    <small>Pagos de hoy: {money(moneySummary.plannedPaymentsToday)}</small>
+                </article>
 
-                        <div className="field-with-label">
-                            <label className="field-label" htmlFor="terminal-on-hand-input">En terminal</label>
-                            <input
-                                id="terminal-on-hand-input"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                inputMode="decimal"
-                                placeholder="0.00"
-                                value={terminalAmountInput}
-                                onChange={(event) => setTerminalAmountInput(event.target.value)}
-                                disabled={!cashEditorUnlocked}
-                            />
-                        </div>
+                <article className="dashboard-mini-card">
+                    <span>Pagos hoy</span>
+                    <strong>{money(totals.today)}</strong>
+                    <small>Mañana: {money(totals.tomorrow)}</small>
+                </article>
+
+                <article className="dashboard-mini-card warning">
+                    <span>Bajo stock</span>
+                    <strong>{Number(catalogMetrics?.lowStock || 0)}</strong>
+                    <small>{Number(catalogMetrics?.activeProducts || 0)} productos activos</small>
+                </article>
+            </section>
+
+            <section className="dashboard-cash-panel" aria-label="Caja actual">
+                <div className="dashboard-cash-summary">
+                    <div>
+                        <span className="section-kicker">Caja actual</span>
+                        <strong>{money(moneySummary.currentTotal)}</strong>
+                        <small>{`Efectivo ${money(moneySummary.cashAmount)} · Terminal ${money(moneySummary.terminalAmount)}`}</small>
                     </div>
 
-                    <article className="dashboard-cash-total">
-                        <span>Total actual registrado</span>
-                        <strong>{money(moneySummary.currentTotal)}</strong>
-                        <small>
-                            {`Caja ${money(moneySummary.cashAmount)} + Terminal ${money(moneySummary.terminalAmount)}`}
-                        </small>
-                    </article>
-
-                    <section className="dashboard-cuts-panel" aria-label="Cortes de caja">
-                        <div className="dashboard-cuts-head">
-                            <h5>Corte de caja</h5>
-                            <button type="button" className="secondary small-btn" onClick={handleCashCut}>
-                                Realizar corte
+                    <div className="dashboard-cash-actions">
+                        {cashEditorUnlocked ? (
+                            <button type="button" className="secondary small-btn" onClick={lockCashEditor}>
+                                Bloquear
                             </button>
-                        </div>
-
-                        {cashCuts.length === 0 ? (
-                            <small className="dashboard-cuts-empty">Aún no hay cortes registrados.</small>
                         ) : (
-                            <div className="dashboard-cuts-list">
-                                {cashCuts.slice(0, 5).map((cut) => {
-                                    const cutDate = new Date(cut.createdAt);
-                                    const dateLabel = Number.isNaN(cutDate.getTime())
-                                        ? cut.createdAt
-                                        : cutDate.toLocaleString('es-MX', {
-                                            dateStyle: 'short',
-                                            timeStyle: 'short'
-                                        });
-
-                                    return (
-                                        <article key={cut.id} className="dashboard-cut-item">
-                                            <div>
-                                                <strong>{money(cut.total)}</strong>
-                                                <small>{dateLabel}</small>
-                                            </div>
-                                            <small>{`Caja ${money(cut.cash)} · Terminal ${money(cut.terminal)}`}</small>
-                                        </article>
-                                    );
-                                })}
-                            </div>
+                            <button type="button" className="secondary small-btn" onClick={requestCashEditorAccess}>
+                                Editar
+                            </button>
                         )}
-                    </section>
+                        <button type="button" className="secondary small-btn" onClick={handleCashCut}>
+                            Corte
+                        </button>
+                    </div>
                 </div>
+
+                <small className={cashEditorUnlocked ? 'dashboard-cash-lock-note unlocked' : 'dashboard-cash-lock-note'}>
+                    {cashAccessMessage}
+                </small>
+
+                <div className="dashboard-cash-form">
+                    <div className="field-with-label">
+                        <label className="field-label" htmlFor="cash-on-hand-input">Efectivo en caja</label>
+                        <input
+                            id="cash-on-hand-input"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            inputMode="decimal"
+                            placeholder="0.00"
+                            value={cashAmountInput}
+                            onChange={(event) => setCashAmountInput(event.target.value)}
+                            disabled={!cashEditorUnlocked}
+                        />
+                    </div>
+
+                    <div className="field-with-label">
+                        <label className="field-label" htmlFor="terminal-on-hand-input">Terminal</label>
+                        <input
+                            id="terminal-on-hand-input"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            inputMode="decimal"
+                            placeholder="0.00"
+                            value={terminalAmountInput}
+                            onChange={(event) => setTerminalAmountInput(event.target.value)}
+                            disabled={!cashEditorUnlocked}
+                        />
+                    </div>
+                </div>
+
+                {cashCuts.length > 0 && (
+                    <div className="dashboard-cuts-list compact">
+                        {cashCuts.slice(0, 3).map((cut) => {
+                            const cutDate = new Date(cut.createdAt);
+                            const dateLabel = Number.isNaN(cutDate.getTime())
+                                ? cut.createdAt
+                                : cutDate.toLocaleString('es-MX', {
+                                    dateStyle: 'short',
+                                    timeStyle: 'short'
+                                });
+
+                            return (
+                                <article key={cut.id} className="dashboard-cut-item">
+                                    <div>
+                                        <strong>{money(cut.total)}</strong>
+                                        <small>{dateLabel}</small>
+                                    </div>
+                                    <small>{`Caja ${money(cut.cash)} · Terminal ${money(cut.terminal)}`}</small>
+                                </article>
+                            );
+                        })}
+                    </div>
+                )}
             </section>
 
             <div className="dashboard-layout">
                 <section className="dashboard-calendar-card">
                     <div className="dashboard-calendar-head">
-                        <button type="button" className="secondary small-btn" onClick={() => goToMonth(-1)}>
-                            ← Mes anterior
-                        </button>
-                        <strong>{monthLabel(viewDate)}</strong>
-                        <button type="button" className="secondary small-btn" onClick={() => goToMonth(1)}>
-                            Mes siguiente →
-                        </button>
+                        <div>
+                            <span className="section-kicker">Calendario</span>
+                            <strong>{monthLabel(viewDate)}</strong>
+                        </div>
+                        <div className="calendar-nav-actions">
+                            <button type="button" className="secondary small-btn" onClick={() => goToMonth(-1)}>
+                                Anterior
+                            </button>
+                            <button type="button" className="secondary small-btn" onClick={() => goToMonth(1)}>
+                                Siguiente
+                            </button>
+                        </div>
                     </div>
 
                     <div className="dashboard-weekdays">
@@ -461,7 +470,9 @@ export default function DashboardSection({
                                 className={[
                                     'calendar-day',
                                     day.inCurrentMonth ? '' : 'outside',
-                                    day.dateKey === selectedDate ? 'selected' : ''
+                                    day.dateKey === selectedDate ? 'selected' : '',
+                                    day.dateKey === today ? 'today' : '',
+                                    day.count > 0 ? 'has-visits' : ''
                                 ]
                                     .filter(Boolean)
                                     .join(' ')}
@@ -473,7 +484,7 @@ export default function DashboardSection({
                                 <span className="calendar-day-number">{day.date.getDate()}</span>
                                 {day.count > 0 && (
                                     <small>
-                                        {day.count} visita(s) · {money(day.total)}
+                                        {day.count} · {money(day.total)}
                                     </small>
                                 )}
                             </button>
@@ -482,7 +493,13 @@ export default function DashboardSection({
                 </section>
 
                 <section className="dashboard-agenda-card">
-                    <h3>Agenda del {selectedDate}</h3>
+                    <div className="agenda-head">
+                        <div>
+                            <span className="section-kicker">Agenda</span>
+                            <h3>{selectedDateLabel}</h3>
+                        </div>
+                        <strong>{money(totals.selected)}</strong>
+                    </div>
 
                     <form className="dashboard-form" onSubmit={handleSubmit}>
                         <select
@@ -520,13 +537,13 @@ export default function DashboardSection({
                         />
 
                         <input
-                            placeholder="Nota opcional (ej. pago factura abril)"
+                            placeholder="Nota opcional"
                             value={form.notes}
                             onChange={(event) => setForm({ ...form, notes: event.target.value })}
                         />
 
                         <button type="submit" disabled={saving}>
-                            {saving ? 'Guardando...' : 'Agregar a agenda'}
+                            {saving ? 'Guardando...' : 'Agregar pago'}
                         </button>
                     </form>
 
@@ -539,10 +556,14 @@ export default function DashboardSection({
                                     <div>
                                         <strong>{visit.supplier_name}</strong>
                                         <small>
-                                            {money(visit.expected_amount)} · {visit.status}
+                                            {money(visit.expected_amount)}
                                             {visit.notes ? ` · ${visit.notes}` : ''}
                                         </small>
                                     </div>
+
+                                    <span className={`visit-status ${String(visit.status || 'PENDING').toLowerCase()}`}>
+                                        {getStatusLabel(visit.status)}
+                                    </span>
 
                                     <div className="row-actions">
                                         <button
@@ -550,7 +571,7 @@ export default function DashboardSection({
                                             className="secondary small-btn"
                                             onClick={() => togglePaidStatus(visit)}
                                         >
-                                            {visit.status === 'PAID' ? 'Marcar pendiente' : 'Marcar pagado'}
+                                            {visit.status === 'PAID' ? 'Pendiente' : 'Pagado'}
                                         </button>
                                         <button
                                             type="button"
@@ -564,6 +585,29 @@ export default function DashboardSection({
                             ))
                         )}
                     </div>
+
+                    <section className="upcoming-panel" aria-label="Próximos pagos">
+                        <div className="upcoming-head">
+                            <span className="section-kicker">Próximos pagos</span>
+                            <strong>{upcomingVisits.length}</strong>
+                        </div>
+
+                        {upcomingVisits.length === 0 ? (
+                            <small className="dashboard-cuts-empty">No hay pagos próximos registrados.</small>
+                        ) : (
+                            <div className="upcoming-list">
+                                {upcomingVisits.map((visit) => (
+                                    <article key={visit.id} className="upcoming-item">
+                                        <div>
+                                            <strong>{visit.supplier_name}</strong>
+                                            <small>{formatDateLabel(visit.visit_date)}</small>
+                                        </div>
+                                        <span>{money(visit.expected_amount)}</span>
+                                    </article>
+                                ))}
+                            </div>
+                        )}
+                    </section>
                 </section>
             </div>
         </section>
