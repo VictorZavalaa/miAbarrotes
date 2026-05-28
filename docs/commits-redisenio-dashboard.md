@@ -2,6 +2,30 @@
 
 Este documento resume los cambios hechos durante el redisenio inicial del sistema POS.
 
+## a73c2d6 - feat(frontend): add operational alerts panel
+
+Agrega un panel de alertas operativas al inicio.
+
+Alertas incluidas:
+
+- Pagos de proveedor pendientes para hoy.
+- Productos con bajo stock.
+- Productos con informacion incompleta en catalogo.
+- Corte de caja pendiente cuando hay monto registrado y no hay corte del dia.
+
+Cambios principales:
+
+- `frontend/src/App.jsx`: pasa `products` al dashboard para poder calcular alertas de inventario/catalogo.
+- `frontend/src/operations/DashboardSection.jsx`: calcula alertas y agrega el panel `Atencion`.
+- `frontend/src/styles.css`: estilos responsive, modo oscuro y colores por prioridad para alertas.
+- `frontend/dist`: build regenerado para produccion.
+
+Resultado esperado:
+
+- El inicio muestra avisos accionables sin entrar a cada modulo.
+- Bajo stock lista los primeros productos mas urgentes.
+- Catalogo incompleto permite saltar directo a Productos.
+
 ## aef267e - feat(frontend): add dashboard quick actions
 
 Agrega acciones rapidas al inicio del dashboard:
@@ -116,4 +140,3 @@ npm run build
 cd ../backend
 npm test
 ```
-
