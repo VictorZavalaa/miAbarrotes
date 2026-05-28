@@ -659,6 +659,7 @@ export default function App() {
                                     visits={supplierVisits}
                                     todaySalesSummary={todaySalesSummary}
                                     catalogMetrics={dashboardMetrics}
+                                    onNavigate={setActiveTab}
                                     onCreateVisit={createSupplierVisit}
                                     onUpdateVisit={updateSupplierVisit}
                                     onDeleteVisit={deleteSupplierVisit}

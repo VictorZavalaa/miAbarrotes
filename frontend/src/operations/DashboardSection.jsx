@@ -54,6 +54,7 @@ export default function DashboardSection({
     visits,
     todaySalesSummary,
     catalogMetrics,
+    onNavigate,
     onCreateVisit,
     onUpdateVisit,
     onDeleteVisit
@@ -321,6 +322,48 @@ export default function DashboardSection({
                     <strong>{selectedDateLabel}</strong>
                 </div>
             </div>
+
+            <section className="quick-actions-panel" aria-label="Acciones rápidas">
+                <button
+                    type="button"
+                    className="quick-action primary"
+                    onClick={() => onNavigate?.('sales')}
+                >
+                    <span>VT</span>
+                    <strong>Nueva venta</strong>
+                    <small>Abrir caja y cobrar</small>
+                </button>
+
+                <button
+                    type="button"
+                    className="quick-action"
+                    onClick={() => onNavigate?.('products')}
+                >
+                    <span>PR</span>
+                    <strong>Agregar producto</strong>
+                    <small>Alta o edición rápida</small>
+                </button>
+
+                <button
+                    type="button"
+                    className="quick-action"
+                    onClick={() => onNavigate?.('purchases')}
+                >
+                    <span>PV</span>
+                    <strong>Proveedor</strong>
+                    <small>Registrar entrada o visita</small>
+                </button>
+
+                <button
+                    type="button"
+                    className="quick-action"
+                    onClick={handleCashCut}
+                >
+                    <span>CJ</span>
+                    <strong>Corte de caja</strong>
+                    <small>Cerrar monto actual</small>
+                </button>
+            </section>
 
             <section className="dashboard-command-grid" aria-label="Resumen operativo">
                 <article className="dashboard-primary-metric">
