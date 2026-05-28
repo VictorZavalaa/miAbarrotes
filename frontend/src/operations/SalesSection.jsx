@@ -43,8 +43,22 @@ export default function SalesSection({ products, form, setForm, onSubmit }) {
 
     useEffect(() => {
         setForm((prev) => {
-            if (Array.isArray(prev.items)) return prev;
-            return { ...prev, items: [] };
+            const nextForm = {
+                ...prev,
+                payment_method: prev.payment_method || 'CASH',
+                cash_received: prev.cash_received ?? '',
+                items: Array.isArray(prev.items) ? prev.items : []
+            };
+
+            if (
+                nextForm.payment_method === prev.payment_method &&
+                nextForm.cash_received === prev.cash_received &&
+                nextForm.items === prev.items
+            ) {
+                return prev;
+            }
+
+            return nextForm;
         });
     }, [setForm]);
 
@@ -70,6 +84,30 @@ export default function SalesSection({ products, form, setForm, onSubmit }) {
         () => cartItems.reduce((acc, item) => acc + Number(item.unit_price || 0) * Number(item.quantity || 0), 0),
         [cartItems]
     );
+
+    const paymentMethod = form.payment_method || 'CASH';
+    const cashReceived = form.cash_received ?? '';
+    const cashReceivedAmount = Number(cashReceived || 0);
+    const hasCashReceived = String(cashReceived).trim() !== '';
+    const cashChange = Math.max(0, cashReceivedAmount - cartTotal);
+    const cashMissing = Math.max(0, cartTotal - cashReceivedAmount);
+    const checkoutDisabled = cartItems.length === 0 || (paymentMethod === 'CASH' && hasCashReceived && cashMissing > 0);
+
+    const quickCashAmounts = useMemo(() => {
+        if (cartTotal <= 0) return [];
+
+        const roundedAmounts = [
+            cartTotal,
+            Math.ceil(cartTotal / 10) * 10,
+            Math.ceil(cartTotal / 20) * 20,
+            Math.ceil(cartTotal / 50) * 50,
+            Math.ceil(cartTotal / 100) * 100
+        ];
+
+        return Array.from(new Set(roundedAmounts.map((amount) => Number(amount.toFixed(2)))))
+            .filter((amount) => amount >= cartTotal)
+            .slice(0, 4);
+    }, [cartTotal]);
 
     useEffect(() => {
         if (!highlightedProductId) return;
@@ -263,9 +301,24 @@ export default function SalesSection({ products, form, setForm, onSubmit }) {
     }
 
     function clearCart() {
-        setForm((prev) => ({ ...prev, items: [] }));
+        setForm((prev) => ({ ...prev, cash_received: '', items: [] }));
         setFeedbackType('success');
         setFeedback('Carrito vaciado.');
+    }
+
+    function setPaymentMethod(nextMethod) {
+        setForm((prev) => ({
+            ...prev,
+            payment_method: nextMethod,
+            cash_received: nextMethod === 'CASH' ? prev.cash_received ?? '' : ''
+        }));
+    }
+
+    function setCashReceived(nextValue) {
+        setForm((prev) => ({
+            ...prev,
+            cash_received: nextValue
+        }));
     }
 
     function incrementItem(productId) {
@@ -291,8 +344,8 @@ export default function SalesSection({ products, form, setForm, onSubmit }) {
                 <p>Carrito con búsqueda y escaneo</p>
             </div>
 
-            <form className="sales-form" onSubmit={onSubmit}>
-                <div className="form-grid form-grid--compact">
+            <form className="sales-form sales-pos-form" onSubmit={onSubmit}>
+                <div className="sales-search-row">
                     <div className="field-with-label suggestion-field">
                         <label className="field-label">Buscar producto o escanear código</label>
                         <input
@@ -325,18 +378,6 @@ export default function SalesSection({ products, form, setForm, onSubmit }) {
                             </div>
                         )}
                     </div>
-
-                    <div className="field-with-label">
-                        <label className="field-label">Método de pago</label>
-                        <select
-                            value={form.payment_method}
-                            onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
-                        >
-                            <option value="CASH">Efectivo</option>
-                            <option value="CARD">Tarjeta</option>
-                            <option value="TRANSFER">Transferencia</option>
-                        </select>
-                    </div>
                 </div>
 
                 {feedback && (
@@ -345,109 +386,182 @@ export default function SalesSection({ products, form, setForm, onSubmit }) {
                     </small>
                 )}
 
-                <div className="sales-cart-box">
-                    <div className="sales-cart-header">
-                        <strong>Carrito ({cartItems.length})</strong>
-                        <div className="sales-cart-header-actions">
-                            <strong>Total: {money(cartTotal)}</strong>
-                            <button
-                                type="button"
-                                className="secondary small-btn"
-                                onClick={clearCart}
-                                disabled={cartItems.length === 0}
-                            >
-                                Vaciar carrito
-                            </button>
+                <div className="sales-pos-layout">
+                    <div className="sales-cart-box">
+                        <div className="sales-cart-header">
+                            <strong>Carrito ({cartItems.length})</strong>
+                            <div className="sales-cart-header-actions">
+                                <strong>Total: {money(cartTotal)}</strong>
+                                <button
+                                    type="button"
+                                    className="secondary small-btn"
+                                    onClick={clearCart}
+                                    disabled={cartItems.length === 0}
+                                >
+                                    Vaciar carrito
+                                </button>
+                            </div>
                         </div>
+
+                        <small className="sales-shortcuts-help">Atajos cantidad: + / - (también ↑ y ↓)</small>
+
+                        {cartItems.length === 0 ? (
+                            <div className="empty-row">Aún no hay productos en el carrito.</div>
+                        ) : (
+                            <div className="sales-cart-list">
+                                {cartItems.map((item) => (
+                                    <article
+                                        className={
+                                            Number(highlightedProductId) === Number(item.product_id)
+                                                ? 'sales-cart-item is-highlighted'
+                                                : 'sales-cart-item'
+                                        }
+                                        key={item.product_id}
+                                    >
+                                        <div className="sales-cart-product">
+                                            {item.image_url ? (
+                                                <img
+                                                    src={toMediaUrl(item.image_url)}
+                                                    alt={item.name}
+                                                    className="product-thumb sales-cart-thumb"
+                                                />
+                                            ) : (
+                                                <span className="thumb-placeholder sales-cart-thumb-placeholder">Sin foto</span>
+                                            )}
+
+                                            <div>
+                                                <strong>{item.name}</strong>
+                                                <small>
+                                                    {item.barcode ? `Cod: ${item.barcode} · ` : ''}
+                                                    Precio: {money(item.unit_price)}
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <div className="sales-cart-actions">
+                                            <div className="quantity-stepper" role="group" aria-label={`Cantidad de ${item.name}`}>
+                                                <button
+                                                    type="button"
+                                                    className="secondary small-btn quantity-btn"
+                                                    onClick={() => decrementItem(item.product_id)}
+                                                    disabled={Number(item.quantity || 1) <= 1}
+                                                    aria-label={`Disminuir cantidad de ${item.name}`}
+                                                >
+                                                    -
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={item.quantity}
+                                                    onChange={(event) => updateItemQuantity(item.product_id, event.target.value)}
+                                                    onKeyDown={(event) => {
+                                                        if (['+', '=', 'Add', '-', '_', 'Subtract', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+                                                            event.preventDefault();
+                                                            handleQuantityShortcut(item.product_id, event.key);
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="secondary small-btn quantity-btn"
+                                                    onClick={() => incrementItem(item.product_id)}
+                                                    disabled={Number(item.stock || 0) > 0 && Number(item.quantity || 0) >= Number(item.stock || 0)}
+                                                    aria-label={`Aumentar cantidad de ${item.name}`}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <span>{money(Number(item.unit_price || 0) * Number(item.quantity || 0))}</span>
+                                            <button
+                                                type="button"
+                                                className="danger small-btn"
+                                                onClick={() => removeItem(item.product_id)}
+                                            >
+                                                Quitar
+                                            </button>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    <small className="sales-shortcuts-help">Atajos cantidad: + / - (también ↑ y ↓)</small>
+                    <aside className="checkout-panel" aria-label="Cobro de venta">
+                        <div className="checkout-total-box">
+                            <span>Total a cobrar</span>
+                            <strong>{money(cartTotal)}</strong>
+                            <small>{cartItems.length} producto(s) en carrito</small>
+                        </div>
 
-                    {cartItems.length === 0 ? (
-                        <div className="empty-row">Aún no hay productos en el carrito.</div>
-                    ) : (
-                        <div className="sales-cart-list">
-                            {cartItems.map((item) => (
-                                <article
-                                    className={
-                                        Number(highlightedProductId) === Number(item.product_id)
-                                            ? 'sales-cart-item is-highlighted'
-                                            : 'sales-cart-item'
-                                    }
-                                    key={item.product_id}
+                        <div className="payment-method-grid" role="group" aria-label="Método de pago">
+                            {[
+                                { id: 'CASH', label: 'Efectivo' },
+                                { id: 'CARD', label: 'Tarjeta' },
+                                { id: 'TRANSFER', label: 'Transferencia' }
+                            ].map((method) => (
+                                <button
+                                    key={method.id}
+                                    type="button"
+                                    className={paymentMethod === method.id ? 'payment-method active' : 'payment-method'}
+                                    onClick={() => setPaymentMethod(method.id)}
                                 >
-                                    <div className="sales-cart-product">
-                                        {item.image_url ? (
-                                            <img
-                                                src={toMediaUrl(item.image_url)}
-                                                alt={item.name}
-                                                className="product-thumb sales-cart-thumb"
-                                            />
-                                        ) : (
-                                            <span className="thumb-placeholder sales-cart-thumb-placeholder">Sin foto</span>
-                                        )}
-
-                                        <div>
-                                            <strong>{item.name}</strong>
-                                            <small>
-                                                {item.barcode ? `Cod: ${item.barcode} · ` : ''}
-                                                Precio: {money(item.unit_price)}
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div className="sales-cart-actions">
-                                        <div className="quantity-stepper" role="group" aria-label={`Cantidad de ${item.name}`}>
-                                            <button
-                                                type="button"
-                                                className="secondary small-btn quantity-btn"
-                                                onClick={() => decrementItem(item.product_id)}
-                                                disabled={Number(item.quantity || 1) <= 1}
-                                                aria-label={`Disminuir cantidad de ${item.name}`}
-                                            >
-                                                -
-                                            </button>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={item.quantity}
-                                                onChange={(event) => updateItemQuantity(item.product_id, event.target.value)}
-                                                onKeyDown={(event) => {
-                                                    if (['+', '=', 'Add', '-', '_', 'Subtract', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
-                                                        event.preventDefault();
-                                                        handleQuantityShortcut(item.product_id, event.key);
-                                                    }
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="secondary small-btn quantity-btn"
-                                                onClick={() => incrementItem(item.product_id)}
-                                                disabled={Number(item.stock || 0) > 0 && Number(item.quantity || 0) >= Number(item.stock || 0)}
-                                                aria-label={`Aumentar cantidad de ${item.name}`}
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                        <span>{money(Number(item.unit_price || 0) * Number(item.quantity || 0))}</span>
-                                        <button
-                                            type="button"
-                                            className="danger small-btn"
-                                            onClick={() => removeItem(item.product_id)}
-                                        >
-                                            Quitar
-                                        </button>
-                                    </div>
-                                </article>
+                                    {method.label}
+                                </button>
                             ))}
                         </div>
-                    )}
-                </div>
 
-                <div className="form-actions">
-                    <button type="submit" disabled={cartItems.length === 0}>
-                        Registrar venta
-                    </button>
+                        {paymentMethod === 'CASH' ? (
+                            <div className="cash-payment-box">
+                                <div className="field-with-label">
+                                    <label className="field-label" htmlFor="cash-received-input">Efectivo recibido</label>
+                                    <input
+                                        id="cash-received-input"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        inputMode="decimal"
+                                        value={cashReceived}
+                                        onChange={(event) => setCashReceived(event.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                </div>
+
+                                {quickCashAmounts.length > 0 && (
+                                    <div className="quick-cash-grid" aria-label="Montos rápidos de efectivo">
+                                        {quickCashAmounts.map((amount) => (
+                                            <button
+                                                key={amount}
+                                                type="button"
+                                                className="secondary small-btn"
+                                                onClick={() => setCashReceived(String(amount))}
+                                            >
+                                                {money(amount)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className={hasCashReceived && cashMissing > 0 ? 'cash-change-box short' : 'cash-change-box'}>
+                                    <span>{hasCashReceived && cashMissing > 0 ? 'Faltante' : 'Cambio'}</span>
+                                    <strong>{money(hasCashReceived && cashMissing > 0 ? cashMissing : cashChange)}</strong>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="non-cash-note">
+                                <span>{paymentMethod === 'CARD' ? 'Cobro con tarjeta' : 'Cobro por transferencia'}</span>
+                                <strong>{money(cartTotal)}</strong>
+                                <small>La venta se registrará con este método de pago.</small>
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            className="checkout-submit"
+                            disabled={checkoutDisabled}
+                        >
+                            Cobrar
+                        </button>
+                    </aside>
                 </div>
             </form>
         </section>

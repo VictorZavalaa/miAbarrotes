@@ -80,6 +80,7 @@ export default function App() {
 
     const [saleForm, setSaleForm] = useState({
         payment_method: 'CASH',
+        cash_received: '',
         items: []
     });
 
@@ -466,10 +467,27 @@ export default function App() {
 
             let cashPayment = null;
             if (saleForm.payment_method === 'CASH') {
-                cashPayment = await promptCashPayment(estimatedTotal);
-                if (!cashPayment) {
-                    setStatus('Venta cancelada antes de registrar.');
-                    return;
+                const hasInlineCash = String(saleForm.cash_received ?? '').trim() !== '';
+                const inlineReceived = Number(saleForm.cash_received || 0);
+
+                if (hasInlineCash) {
+                    if (!Number.isFinite(inlineReceived) || inlineReceived < estimatedTotal) {
+                        const message = 'El efectivo recibido es menor que el total a cobrar.';
+                        setError(message);
+                        warningToast(message);
+                        return;
+                    }
+
+                    cashPayment = {
+                        received: inlineReceived,
+                        change: Math.max(0, inlineReceived - estimatedTotal)
+                    };
+                } else {
+                    cashPayment = await promptCashPayment(estimatedTotal);
+                    if (!cashPayment) {
+                        setStatus('Venta cancelada antes de registrar.');
+                        return;
+                    }
                 }
             }
 
@@ -482,7 +500,7 @@ export default function App() {
             const response = await api.createSale(payload);
             applySaleToCashTracker(saleForm.payment_method, response.total);
             await loadAll();
-            setSaleForm((prev) => ({ ...prev, items: [] }));
+            setSaleForm((prev) => ({ ...prev, cash_received: '', items: [] }));
             if (cashPayment) {
                 const changeAmount = Math.max(0, Number(cashPayment.received || 0) - Number(response.total || 0));
                 setStatus(
