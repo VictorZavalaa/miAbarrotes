@@ -655,6 +655,7 @@ export default function App() {
 
                             {activeTab === 'dashboard' && (
                                 <DashboardSection
+                                    products={products}
                                     suppliers={suppliers}
                                     visits={supplierVisits}
                                     todaySalesSummary={todaySalesSummary}

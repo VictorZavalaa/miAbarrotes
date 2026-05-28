@@ -3523,3 +3523,192 @@ body[data-theme='dark'] .quick-action.primary small {
         min-height: 68px;
     }
 }
+
+/* Step 3 operational alerts */
+.alerts-panel {
+    border: 1px solid var(--pos-line);
+    border-radius: 8px;
+    background: var(--pos-panel);
+    padding: 10px;
+    display: grid;
+    gap: 10px;
+}
+
+.alerts-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.alerts-panel-head h3 {
+    margin: 2px 0 0;
+    color: var(--pos-ink);
+    font-size: 1rem;
+}
+
+.alerts-panel-head small {
+    color: var(--pos-muted);
+    font-weight: 700;
+}
+
+.alerts-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.alert-card {
+    min-height: 116px;
+    border: 1px solid var(--pos-line);
+    border-radius: 8px;
+    background: var(--pos-panel-soft);
+    padding: 10px;
+    display: grid;
+    align-content: start;
+    gap: 8px;
+}
+
+.alert-card.warning {
+    background: var(--pos-amber-soft);
+    border-color: #edcc94;
+}
+
+.alert-card.danger {
+    background: var(--pos-red-soft);
+    border-color: #f0b5ae;
+}
+
+.alert-card.info {
+    background: var(--pos-blue-soft);
+    border-color: #bfcee8;
+}
+
+.alert-card.success {
+    background: var(--pos-green-soft);
+    border-color: #b5d6c8;
+}
+
+.alert-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.alert-card-head strong {
+    color: var(--pos-ink);
+    font-size: 0.9rem;
+}
+
+.alert-card-head span {
+    min-width: 30px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.68);
+    color: var(--pos-ink);
+    padding: 3px 8px;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.alert-card p {
+    margin: 0;
+    color: var(--pos-muted);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.alert-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 5px;
+}
+
+.alert-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--pos-ink);
+    font-size: 0.8rem;
+}
+
+.alert-list li span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.alert-list li small {
+    color: var(--pos-muted);
+    white-space: nowrap;
+}
+
+.alert-card .small-btn {
+    justify-self: start;
+    min-width: 118px;
+}
+
+body[data-theme='dark'] .alerts-panel,
+body[data-theme='dark'] .alert-card {
+    background: #1a1f24;
+    border-color: #2d343b;
+}
+
+body[data-theme='dark'] .alert-card.warning {
+    background: #322717;
+    border-color: #66502a;
+}
+
+body[data-theme='dark'] .alert-card.danger {
+    background: #3a1c1a;
+    border-color: #6d2d27;
+}
+
+body[data-theme='dark'] .alert-card.info {
+    background: #16243d;
+    border-color: #2f4d7a;
+}
+
+body[data-theme='dark'] .alert-card.success {
+    background: #18372d;
+    border-color: #316752;
+}
+
+body[data-theme='dark'] .alerts-panel-head h3,
+body[data-theme='dark'] .alert-card-head strong,
+body[data-theme='dark'] .alert-list li {
+    color: #f4f4f5;
+}
+
+body[data-theme='dark'] .alerts-panel-head small,
+body[data-theme='dark'] .alert-card p,
+body[data-theme='dark'] .alert-list li small {
+    color: #a1a1aa;
+}
+
+body[data-theme='dark'] .alert-card-head span {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f4f4f5;
+}
+
+@media (max-width: 1180px) {
+    .alerts-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .alerts-panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .alerts-grid {
+        grid-template-columns: 1fr;
+    }
+}

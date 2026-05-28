@@ -49,7 +49,20 @@ function getStatusLabel(status) {
     return 'Pendiente';
 }
 
+function getProductMissingFields(product) {
+    const missing = [];
+
+    if (!String(product.image_url || '').trim()) missing.push('foto');
+    if (!String(product.barcode || '').trim()) missing.push('codigo');
+    if (!String(product.category || '').trim()) missing.push('categoria');
+    if (Number(product.sale_price || 0) <= 0) missing.push('precio');
+    if (Number(product.cost_price || 0) <= 0) missing.push('costo');
+
+    return missing;
+}
+
 export default function DashboardSection({
+    products = [],
     suppliers,
     visits,
     todaySalesSummary,
@@ -221,6 +234,48 @@ export default function DashboardSection({
             .slice(0, 5);
     }, [visits, today]);
 
+    const alertSummary = useMemo(() => {
+        const lowStockProducts = products
+            .filter((product) => {
+                if (Number(product.is_active ?? 1) !== 1) return false;
+
+                const minStock = Number(product.min_stock || 0);
+                if (minStock <= 0) return false;
+
+                return Number(product.stock || 0) <= minStock;
+            });
+
+        const lowStockItems = lowStockProducts
+            .sort((a, b) => Number(a.stock || 0) - Number(b.stock || 0))
+            .slice(0, 4);
+
+        const incompleteProducts = products.filter((product) => {
+            if (Number(product.is_active ?? 1) !== 1) return false;
+            return getProductMissingFields(product).length > 0;
+        });
+
+        const pendingPaymentsToday = (visitsByDate[today] || []).filter((visit) => visit.status === 'PENDING');
+        const pendingPaymentsTotal = pendingPaymentsToday.reduce(
+            (acc, visit) => acc + Number(visit.expected_amount || 0),
+            0
+        );
+
+        const hasCutToday = cashCuts.some((cut) => {
+            const cutDate = new Date(cut.createdAt);
+            if (Number.isNaN(cutDate.getTime())) return false;
+            return toDateOnly(cutDate) === today;
+        });
+
+        return {
+            lowStockItems,
+            lowStockCount: lowStockProducts.length,
+            incompleteCount: incompleteProducts.length,
+            pendingPaymentsToday,
+            pendingPaymentsTotal,
+            hasCutToday
+        };
+    }, [products, visitsByDate, today, cashCuts]);
+
     async function handleSubmit(event) {
         event.preventDefault();
         if (!form.supplier_id || !form.visit_date || !form.expected_amount) return;
@@ -391,6 +446,78 @@ export default function DashboardSection({
                     <strong>{Number(catalogMetrics?.lowStock || 0)}</strong>
                     <small>{Number(catalogMetrics?.activeProducts || 0)} productos activos</small>
                 </article>
+            </section>
+
+            <section className="alerts-panel" aria-label="Alertas del sistema">
+                <div className="alerts-panel-head">
+                    <div>
+                        <span className="section-kicker">Atención</span>
+                        <h3>Alertas operativas</h3>
+                    </div>
+                    <small>{alertSummary.lowStockCount + alertSummary.pendingPaymentsToday.length + alertSummary.incompleteCount} pendiente(s)</small>
+                </div>
+
+                <div className="alerts-grid">
+                    <article className={alertSummary.pendingPaymentsToday.length > 0 ? 'alert-card warning' : 'alert-card success'}>
+                        <div className="alert-card-head">
+                            <strong>Pagos de hoy</strong>
+                            <span>{alertSummary.pendingPaymentsToday.length}</span>
+                        </div>
+                        <p>
+                            {alertSummary.pendingPaymentsToday.length > 0
+                                ? `${money(alertSummary.pendingPaymentsTotal)} pendiente(s) con proveedor.`
+                                : 'Sin pagos pendientes para hoy.'}
+                        </p>
+                    </article>
+
+                    <article className={alertSummary.lowStockCount > 0 ? 'alert-card danger' : 'alert-card success'}>
+                        <div className="alert-card-head">
+                            <strong>Bajo stock</strong>
+                            <span>{alertSummary.lowStockCount}</span>
+                        </div>
+                        {alertSummary.lowStockItems.length > 0 ? (
+                            <ul className="alert-list">
+                                {alertSummary.lowStockItems.map((product) => (
+                                    <li key={product.id}>
+                                        <span>{product.name}</span>
+                                        <small>{Number(product.stock || 0)} / min {Number(product.min_stock || 0)}</small>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p>Inventario sin alertas críticas.</p>
+                        )}
+                    </article>
+
+                    <article className={alertSummary.incompleteCount > 0 ? 'alert-card info' : 'alert-card success'}>
+                        <div className="alert-card-head">
+                            <strong>Catálogo incompleto</strong>
+                            <span>{alertSummary.incompleteCount}</span>
+                        </div>
+                        <p>
+                            {alertSummary.incompleteCount > 0
+                                ? 'Productos con foto, código, costo o categoría pendiente.'
+                                : 'Catálogo listo para operar.'}
+                        </p>
+                        {alertSummary.incompleteCount > 0 && (
+                            <button type="button" className="secondary small-btn" onClick={() => onNavigate?.('products')}>
+                                Revisar productos
+                            </button>
+                        )}
+                    </article>
+
+                    <article className={moneySummary.currentTotal > 0 && !alertSummary.hasCutToday ? 'alert-card warning' : 'alert-card success'}>
+                        <div className="alert-card-head">
+                            <strong>Corte de caja</strong>
+                            <span>{alertSummary.hasCutToday ? 'OK' : 'Hoy'}</span>
+                        </div>
+                        <p>
+                            {moneySummary.currentTotal > 0 && !alertSummary.hasCutToday
+                                ? `Caja actual ${money(moneySummary.currentTotal)} sin corte registrado hoy.`
+                                : 'Sin corte pendiente detectado.'}
+                        </p>
+                    </article>
+                </div>
             </section>
 
             <section className="dashboard-cash-panel" aria-label="Caja actual">
