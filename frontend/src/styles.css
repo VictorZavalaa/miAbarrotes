@@ -3162,3 +3162,219 @@ body[data-theme='dark'] .visit-status.cancelled {
         padding: 6px;
     }
 }
+
+/* Step 1 dashboard polish */
+.page-header {
+    padding: 12px 14px;
+}
+
+.header-clock,
+.header-badge {
+    min-height: 48px;
+}
+
+.top-bar {
+    min-height: 40px;
+    padding: 8px 10px;
+    gap: 10px;
+}
+
+.top-bar-meta {
+    min-width: 0;
+}
+
+.top-bar-meta small {
+    color: var(--pos-muted);
+    white-space: nowrap;
+}
+
+.top-bar-actions {
+    gap: 6px;
+}
+
+.top-bar-refresh {
+    min-width: 96px;
+}
+
+.status-chip {
+    padding: 4px 9px;
+    font-size: 0.8rem;
+}
+
+.dashboard-home {
+    gap: 10px;
+}
+
+.dashboard-home-head {
+    align-items: center;
+    padding: 0;
+}
+
+.dashboard-home-head h2 {
+    margin-top: 2px;
+    font-size: clamp(1.28rem, 2vw, 1.62rem);
+}
+
+.dashboard-date-chip {
+    min-width: 168px;
+    padding: 8px 10px;
+}
+
+.dashboard-command-grid {
+    gap: 8px;
+}
+
+.dashboard-primary-metric {
+    min-height: 118px;
+    padding: 15px 16px;
+}
+
+.dashboard-primary-metric strong {
+    font-size: clamp(1.85rem, 3.6vw, 2.75rem);
+}
+
+.dashboard-balance-card,
+.dashboard-mini-card {
+    min-height: 118px;
+    padding: 12px;
+}
+
+.dashboard-balance-card strong,
+.dashboard-mini-card strong {
+    font-size: clamp(1.22rem, 2.2vw, 1.65rem);
+}
+
+.dashboard-cash-panel {
+    padding: 11px 12px;
+    grid-template-columns: minmax(260px, 0.72fr) minmax(320px, 1.28fr);
+}
+
+.dashboard-cash-summary strong {
+    font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+}
+
+.dashboard-cash-actions .small-btn {
+    min-width: 82px;
+}
+
+.dashboard-cash-lock-note {
+    font-size: 0.84rem;
+}
+
+.dashboard-layout {
+    gap: 10px;
+}
+
+.dashboard-calendar-card,
+.dashboard-agenda-card {
+    padding: 10px;
+}
+
+.dashboard-calendar-head,
+.agenda-head,
+.upcoming-head {
+    margin-bottom: 8px;
+}
+
+.dashboard-weekdays {
+    gap: 4px;
+    margin-bottom: 4px;
+    font-size: 0.76rem;
+}
+
+.dashboard-calendar-grid {
+    gap: 4px;
+}
+
+.calendar-day {
+    min-height: 62px;
+    padding: 6px;
+    align-content: start;
+}
+
+.calendar-day-number {
+    font-size: 0.88rem;
+}
+
+.calendar-day small {
+    font-size: 0.68rem;
+}
+
+.dashboard-form {
+    padding: 9px;
+    gap: 7px;
+}
+
+.dashboard-form input,
+.dashboard-form select {
+    min-height: 42px;
+}
+
+input,
+select {
+    min-height: 42px;
+}
+
+select {
+    appearance: none;
+    background-color: #ffffff;
+    background-image:
+        linear-gradient(45deg, transparent 50%, currentColor 50%),
+        linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+        calc(100% - 18px) calc(50% + 1px),
+        calc(100% - 12px) calc(50% + 1px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    padding-right: 34px;
+}
+
+select option {
+    background: #ffffff;
+    color: var(--pos-ink);
+}
+
+.dashboard-visit-item {
+    padding: 8px;
+}
+
+.empty-row {
+    padding: 14px 8px;
+}
+
+body[data-theme='dark'] select {
+    background-color: #111827;
+    color: #e5e7eb;
+    color-scheme: dark;
+}
+
+body[data-theme='dark'] select option {
+    background: #111827;
+    color: #e5e7eb;
+}
+
+body[data-theme='dark'] .top-bar-meta small {
+    color: #a1a1aa;
+}
+
+body[data-theme='dark'] .dashboard-form input,
+body[data-theme='dark'] .dashboard-form select {
+    background-color: #0f172a;
+    border-color: #2f4264;
+}
+
+@media (max-width: 1180px) {
+    .top-bar-actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 760px) {
+    .top-bar-refresh {
+        min-width: 0;
+    }
+
+    .dashboard-cash-panel {
+        grid-template-columns: 1fr;
+    }
+}

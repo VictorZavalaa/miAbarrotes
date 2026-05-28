@@ -31,8 +31,8 @@ export default function TopBar({ status, deployTag, onRefresh, lastRefreshAt, th
                 <button type="button" className="secondary small-btn" onClick={onToggleTheme}>
                     {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
                 </button>
-                <button type="button" className="secondary" onClick={onRefresh}>
-                    Refrescar datos
+                <button type="button" className="secondary small-btn top-bar-refresh" onClick={onRefresh}>
+                    Refrescar
                 </button>
             </div>
         </section>
