@@ -41,6 +41,11 @@ export const api = {
             method: 'POST',
             body: JSON.stringify({ username, password })
         }),
+    changePassword: (payload) =>
+        request('/login/password', {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        }),
     getProducts: () => request('/products'),
     createProduct: (payload) =>
         request('/products', {

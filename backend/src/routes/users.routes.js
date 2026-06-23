@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
+const { hashPassword, verifyPassword } = require('../utils/passwords');
 
 const router = express.Router();
 
@@ -91,15 +92,86 @@ router.post(
             throw error;
         }
 
-        if (String(user.password_hash || '') !== password) {
+        const passwordCheck = await verifyPassword(password, user.password_hash);
+        if (!passwordCheck.valid) {
             const error = new Error('Contraseña incorrecta');
             error.statusCode = 401;
             throw error;
         }
 
+        if (passwordCheck.needsUpgrade) {
+            const upgradedHash = await hashPassword(password);
+            await pool.query(
+                'UPDATE users SET password_hash = ? WHERE id = ?',
+                [upgradedHash, user.id]
+            );
+        }
+
         const { password_hash: _passwordHash, ...safeUser } = user;
 
         res.json({ ok: true, data: safeUser });
+    })
+);
+
+router.put(
+    '/password',
+    asyncHandler(async (req, res) => {
+        await ensureUsersSchema();
+
+        const userId = Number(req.body?.user_id);
+        const currentPassword = String(req.body?.current_password || '');
+        const newPassword = String(req.body?.new_password || '');
+
+        if (!Number.isInteger(userId) || userId <= 0 || !currentPassword || !newPassword) {
+            const error = new Error('Usuario, contraseña actual y contraseña nueva son obligatorios');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (newPassword.length < 8) {
+            const error = new Error('La contraseña nueva debe tener al menos 8 caracteres');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (currentPassword === newPassword) {
+            const error = new Error('La contraseña nueva debe ser diferente a la actual');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const [rows] = await pool.query(
+            `SELECT id, password_hash, is_active
+             FROM users
+             WHERE id = ?
+             LIMIT 1`,
+            [userId]
+        );
+
+        const user = rows[0];
+        if (!user || Number(user.is_active || 0) !== 1) {
+            const error = new Error('Usuario no encontrado o inactivo');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const passwordCheck = await verifyPassword(currentPassword, user.password_hash);
+        if (!passwordCheck.valid) {
+            const error = new Error('La contraseña actual es incorrecta');
+            error.statusCode = 401;
+            throw error;
+        }
+
+        const passwordHash = await hashPassword(newPassword);
+        await pool.query(
+            'UPDATE users SET password_hash = ? WHERE id = ?',
+            [passwordHash, userId]
+        );
+
+        res.json({
+            ok: true,
+            message: 'Contraseña actualizada correctamente'
+        });
     })
 );
 

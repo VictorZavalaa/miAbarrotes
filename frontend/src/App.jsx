@@ -6,6 +6,7 @@ import DashboardSection from './operations/DashboardSection';
 import ProductsSection from './operations/ProductsSection';
 import SalesSection from './operations/SalesSection';
 import PurchasesSection from './operations/PurchasesSection';
+import ProfileSection from './operations/ProfileSection';
 import { money } from './utils';
 import { errorToast, promptCashPayment, showCashChangeAlert, successToast, warningToast } from './utils/alerts';
 
@@ -13,7 +14,8 @@ const tabs = [
     { id: 'dashboard', label: 'Inicio', icon: 'IN', hint: 'Resumen operativo' },
     { id: 'sales', label: 'Venta rápida', icon: 'VT', hint: 'Caja y cobro' },
     { id: 'products', label: 'Productos', icon: 'PR', hint: 'Inventario' },
-    { id: 'purchases', label: 'Proveedores', icon: 'PV', hint: 'Entradas y agenda' }
+    { id: 'purchases', label: 'Proveedores', icon: 'PV', hint: 'Entradas y agenda' },
+    { id: 'profile', label: 'Mi perfil', icon: 'US', hint: 'Cuenta y contraseña' }
 ];
 
 const CASH_TRACKER_KEY = 'dashboard-cash-tracker';
@@ -213,6 +215,28 @@ export default function App() {
         setLoginUsername('');
         setLoginPassword('');
         setStatus('Selecciona un usuario para continuar.');
+    }
+
+    async function handleChangePassword(payload) {
+        if (payload?.validationError) {
+            warningToast(payload.validationError);
+            return;
+        }
+
+        setError('');
+        try {
+            const response = await api.changePassword({
+                user_id: currentUser.id,
+                current_password: payload.current_password,
+                new_password: payload.new_password
+            });
+            setStatus('Contraseña actualizada.');
+            successToast(response.message || 'Contraseña actualizada correctamente.');
+        } catch (err) {
+            setError(err.message);
+            errorToast(err.message || 'No se pudo cambiar la contraseña.');
+            throw err;
+        }
     }
 
     async function submitProduct(_event, imageFile = null) {
@@ -649,7 +673,7 @@ export default function App() {
                                 onSwitchUser={handleSwitchUser}
                             />
 
-                            {activeTab !== 'dashboard' && (
+                            {activeTab !== 'dashboard' && activeTab !== 'profile' && (
                                 <section className="kpi-strip" aria-label="Indicadores de operación">
                                     <article className="kpi-card tone-blue">
                                         <span>Productos</span>
@@ -713,6 +737,13 @@ export default function App() {
                                     supplierForm={supplierForm}
                                     setSupplierForm={setSupplierForm}
                                     onSubmitSupplier={submitSupplier}
+                                />
+                            )}
+
+                            {activeTab === 'profile' && (
+                                <ProfileSection
+                                    currentUser={currentUser}
+                                    onChangePassword={handleChangePassword}
                                 />
                             )}
                         </main>
