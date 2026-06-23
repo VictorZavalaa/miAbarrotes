@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const fs = require('fs');
 const env = require('./config/env');
+const { createCorsOptions } = require('./config/cors');
 
 const healthRoutes = require('./routes/health.routes');
 const productsRoutes = require('./routes/products.routes');
@@ -23,7 +24,7 @@ app.use(
         crossOriginResourcePolicy: { policy: 'cross-origin' }
     })
 );
-app.use(cors({ origin: env.corsOrigin === '*' ? true : env.corsOrigin }));
+app.use(cors(createCorsOptions(env.corsOrigin)));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('dev'));
 app.use('/media', express.static(env.mediaRoot));

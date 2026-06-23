@@ -2,6 +2,23 @@
 
 Este documento resume los cambios hechos durante el redisenio inicial del sistema POS.
 
+## 955aee9 - feat(frontend): improve checkout flow
+
+Mejora la pantalla de Venta rapida para que el cobro sea mas directo.
+
+Cambios principales:
+
+- `frontend/src/operations/SalesSection.jsx`: agrega panel lateral de cobro con total grande, metodo de pago por botones, efectivo recibido, montos rapidos y cambio/faltante en vivo.
+- `frontend/src/App.jsx`: permite registrar efectivo recibido desde la pantalla sin abrir el prompt anterior; si el campo queda vacio, conserva el prompt como respaldo.
+- `frontend/src/styles.css`: estilos responsive y modo oscuro para el nuevo flujo de cobro.
+- `frontend/dist`: build regenerado para produccion.
+
+Resultado esperado:
+
+- En Venta rapida se puede cobrar mas rapido desde un panel fijo.
+- El cajero ve antes de registrar si falta efectivo o cuanto cambio debe dar.
+- Tarjeta y transferencia quedan como opciones claras sin usar un select.
+
 ## a73c2d6 - feat(frontend): add operational alerts panel
 
 Agrega un panel de alertas operativas al inicio.
